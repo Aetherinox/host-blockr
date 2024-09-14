@@ -1,23 +1,22 @@
 # ---------------------------------------------------------------------------------------
 #   @parent     : github workflow
-#   @desc       : generate blocklists
+#   @desc       : download / generate blocklists
 #   @author     : Aetherinox
 #   @url        : https://github.com/Aetherinox
 # ---------------------------------------------------------------------------------------
 
-name: "🫷 Blocklist › Generate"
-run-name: "🫷 Blocklist › Generate"
+name: "🫷 Blocklist › Download"
+run-name: "🫷 Blocklist › Download"
 
 # #
 #   TRIGGERS
+#
+#   https://crontab.guru
 # #
 
 on:
-    push:
-        branches:
-            - main
-        paths:
-            - '**.txt'
+    schedule:
+        - cron: '0 */2 * * *' # At minute 0 past every 2nd hour.
 
     workflow_dispatch:
 
@@ -37,7 +36,7 @@ env:
 # #
 
 jobs:
-    generate:
+    download:
         runs-on: ubuntu-latest
 
         steps:
@@ -54,23 +53,35 @@ jobs:
                   ref: main
 
             # #
-            #   Generate > Setup Node
+            #   Blocklist > Download
             # #
 
             - name: >-
-                  ⚙️ Setup Node
+                  📝 Download Blocklists
+              run: bash bash/download.sh
+
+            # #
+            #   Download > Install NodeJS
+            # #
+
+            - name: >-
+                  📦 Node › Install
               uses: actions/setup-node@v4
               with:
                   node-version: 20.x
                   cache: 'npm'
 
             # #
-            #   Generate > Install Dependencies
+            #   Download > NodeJS > Install Dependencies
             # #
 
             - name: >-
                   📦 Node › Install Dependencies
               run: npm ci
+
+            # #
+            #   Download > Templates
+            # #
 
             - name: >-
                   📦 Node › Prepare Templates
@@ -89,11 +100,15 @@ jobs:
               run: node scripts/set-valid-encoding.js
 
             - name: >-
+                  📦 Node › Lint
+              run: node scripts/lint.js
+
+            - name: >-
                   📦 Node › Count Domains
               run: node scripts/update-number-of-domains.js --ignore-question
 
             # #
-            #   Blocklist > Generate
+            #   Download > Generate
             # #
               
             - name: >-
@@ -145,11 +160,11 @@ jobs:
                       MODIFIED_FILES=$(git diff --name-only HEAD | grep -v '^cache/')
                       FILE_COUNT=$(echo "$MODIFIED_FILES" | wc -l)
                       if [ "$FILE_COUNT" -gt 0 ]; then
-                          git commit -am "Update previously committed blocklists in $GITHUB_SHA [$FILE_COUNT files]" -m "$MODIFIED_FILES"
+                          git commit -am "Bi-hourly update of blocklists [$FILE_COUNT files] - $(date -u '+%Y-%m-%d %H:%M:%S UTC')" -m "$MODIFIED_FILES"
                           git push origin main
                       else
-                          echo "Abort. No files to commit after excluding cache/ files."
+                          echo "Canceled. No files to commit after excluding cache/ files."
                       fi
                   else
-                      echo "Abort. No changes to commit."
+                      echo "Canceled. No changes to commit."
                   fi
