@@ -1,0 +1,155 @@
+# ---------------------------------------------------------------------------------------
+#   @parent     : github workflow
+#   @desc       : generate blocklists
+#   @author     : Aetherinox
+#   @url        : https://github.com/Aetherinox
+# ---------------------------------------------------------------------------------------
+
+name: "🫷 Blocklist › Generate"
+run-name: "🫷 Blocklist › Generate"
+
+# #
+#   TRIGGERS
+# #
+
+on:
+    push:
+        branches:
+            - main
+        paths:
+            - '**.txt'
+
+    workflow_dispatch:
+
+# ---------------------------------------------------------------------------------------
+#   environment variables
+# ---------------------------------------------------------------------------------------
+
+env:
+    ASSIGN_USER:          Aetherinox
+    BOT_NAME_1:           AdminServ
+    BOT_NAME_2:           AdminServX
+    BOT_NAME_3:           EuropaServ
+    BOT_NAME_DEPENDABOT:  dependabot[bot]
+
+# #
+#   JOBS
+# #
+
+jobs:
+    generate:
+        runs-on: ubuntu-latest
+
+        steps:
+
+            # ---------------------------------------------------------------------------------------
+            #   Generate > Checkout
+            # ---------------------------------------------------------------------------------------
+
+            - name: >-
+                  ☑️ Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 1
+                  ref: main
+
+            # ---------------------------------------------------------------------------------------
+            #   Generate > Setup Node
+            # ---------------------------------------------------------------------------------------
+
+            - name: >-
+                  ⚙️ Setup Node
+              uses: actions/setup-node@v4
+              with:
+                  node-version: 20.x
+                  cache: 'npm'
+
+            # ---------------------------------------------------------------------------------------
+            #   Generate > Install Dependencies
+            # ---------------------------------------------------------------------------------------
+
+            - name: >-
+                  📦 Node › Install Dependencies
+              run: npm ci
+
+            - name: >-
+                  📦 Node › Prepare Templates
+              run: node scripts/prepare-templates.js
+
+            - name: >-
+                  📦 Node › Prepare Lines
+              run: node scripts/prepare-lines.js
+
+            - name: >-
+                  📦 Node › Remove Whitelisted Domains
+              run: node scripts/whitelist.js
+
+            - name: >-
+                  📦 Node › Set Encoding
+              run: node scripts/set-valid-encoding.js
+
+            - name: >-
+                  📦 Node › Count Domains
+              run: node scripts/update-number-of-domains.js --ignore-question
+
+            # ---------------------------------------------------------------------------------------
+            #   Generate > Create Lists
+            # ---------------------------------------------------------------------------------------
+              
+            - name: >-
+                  📝 Generate › No IP List
+              run: node scripts/generate/noip.js
+
+            - name: >-
+                  📝 Generate › 0.0.0.0 List
+              run: node scripts/generate/0.0.0.0.js
+
+            - name: >-
+                  📝 Generate › 127.0.0.1 List
+              run: node scripts/generate/127.0.0.1.js
+
+            - name: >-
+                  📝 Generate › AdGuard List
+              run: node scripts/generate/adguard.js
+
+            - name: >-
+                  📝 Generate › Dnsmasq List
+              run: node scripts/generate/dnsmasq.js
+
+            - name: >-
+                  📝 Generate › RPZ List
+              run: node scripts/generate/rpz.js
+
+            - name: >-
+                  📝 Generate › Unbound List
+              run: node scripts/generate/unbound.js
+
+            # ---------------------------------------------------------------------------------------
+            #   Generate > Git > Push Changes
+            # ---------------------------------------------------------------------------------------
+
+            - name: >-
+                  🪀 Git › Pull
+              run: git pull origin main
+
+            - name: >-
+                  🪀 Git › Stage Files (Add)
+              run: git add .
+
+            - name: >-
+                  🪀 Git › Push Changes
+              run: |
+                  git config user.name `${{ env.BOT_NAME_3 }}`
+                  git config user.email `${{ secrets.ADMINSERV_EMAIL_ADDRESS }}`
+                  if [ -n "$(git status -s)" ]; then
+                          MODIFIED_FILES=$(git diff --name-only HEAD | grep -v '^cache/')
+                          FILE_COUNT=$(echo "$MODIFIED_FILES" | wc -l)
+                          if [ "$FILE_COUNT" -gt 0 ]; then
+                              git commit -am "Update previously committed blocklists in $GITHUB_SHA [$FILE_COUNT files]" -m "$MODIFIED_FILES"
+                              git push origin main
+                          else
+                              echo "Abort. No files to commit after excluding cache/ files."
+                          fi
+                  else
+                      echo "Abort. No changes to commit."
+                  fi
