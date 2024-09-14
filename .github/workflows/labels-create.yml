@@ -100,8 +100,12 @@ jobs:
         name: >-
             🎫 Labels › Create
         runs-on: ubuntu-latest
-        environment:
-            name: Orion
+        #permissions:
+        #    contents: 'read'
+        #    id-token: 'write'
+        #    issues: 'write'
+        # environment:
+        #    name: Orion
         steps:
 
             - name: >-
