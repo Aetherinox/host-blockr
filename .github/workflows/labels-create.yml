@@ -100,6 +100,8 @@ jobs:
         name: >-
             🎫 Labels › Create
         runs-on: ubuntu-latest
+        environment:
+            name: Orion
         steps:
 
             - name: >-

@@ -163,8 +163,8 @@ jobs:
                           git commit -am "Bi-hourly update of blocklists [$FILE_COUNT files] - $(date -u '+%Y-%m-%d %H:%M:%S UTC')" -m "$MODIFIED_FILES"
                           git push origin main
                       else
-                          echo "Canceled. No files to commit after excluding cache/ files."
+                          echo "Abort. No files to commit after excluding cache/ files."
                       fi
                   else
-                      echo "Canceled. No changes to commit."
+                      echo "Abort. No changes to commit."
                   fi
